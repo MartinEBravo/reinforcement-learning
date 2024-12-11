@@ -93,7 +93,7 @@ def epsilon_greedy(Q,
                    epsilon_initial=1,
                    epsilon_final=0.2,
                    anneal_timesteps=10000,
-                   eps_type="constant"):
+                   eps_type="linear"):
 
     if eps_type == 'constant':
         epsilon = epsilon_final
@@ -113,13 +113,16 @@ def epsilon_greedy(Q,
         # Use epsilon and all input arguments of epsilon_greedy you see fit
         # use the ScheduleLinear class
         # It is recommended you use the np.random module
-        delta_eps = epsilon_initial - epsilon_final
-        eps_t = epsilon_initial + delta_eps * (current_total_steps / anneal_timesteps)
+        # delta_eps = epsilon_initial - epsilon_final
+        # eps_t = epsilon_initial + delta_eps * (current_total_steps / anneal_timesteps)
+
+        schedule = ScheduleLinear(anneal_timesteps, epsilon_final, epsilon_initial)
+        eps_t = schedule.value(current_total_steps)
         if np.random.rand() < eps_t:
             action = np.random.choice(all_actions)
         else:
             action = np.nanargmax(Q[state])
-        # ADD YOUR CODE SNIPPET BETWEENEX  4.2
+        # # ADD YOUR CODE SNIPPET BETWEENEX  4.2
 
     else:
         raise "Epsilon greedy type unknown"
@@ -165,7 +168,7 @@ class PlayerControllerRL(PlayerController, FishesModelling):
         self.allowed_movements()
         # ADD YOUR CODE SNIPPET BETWEEN EX. 2.1
         # Initialize a numpy array with ns state rows and na state columns with float values from 0.0 to 1.0.
-        Q = np.random.uniform(0, 1, (ns, na))
+        Q = np.random.rand(ns, na)
         # ADD YOUR CODE SNIPPET BETWEEN EX. 2.1
 
         for s in range(ns):
@@ -200,15 +203,13 @@ class PlayerControllerRL(PlayerController, FishesModelling):
                 # selection of action
                 list_pos = self.allowed_moves[s_current]
 
-                # ADD YOUR CODE SNIPPET BETWEEN EX 2.1 and 2.2
-                # Chose an action from all possible actions
-                action = np.nanargmax(Q[s_current])
-                # ADD YOUR CODE SNIPPET BETWEEN EX 2.1 and 2.2
-
                 # ADD YOUR CODE SNIPPET BETWEEN EX 5
                 # Use the epsilon greedy algorithm to retrieve an action
-                action = epsilon_greedy(Q, s_current, list_pos, current_total_steps, self.epsilon_initial, self.epsilon_final, self.annealing_timesteps, 'linear')
+                action = epsilon_greedy(Q, s_current, list_pos, current_total_steps, self.epsilon_initial,
+                                        self.epsilon_final, self.annealing_timesteps, eps_type="linear")
                 # ADD YOUR CODE SNIPPET BETWEEN EX 5
+
+                # print("Action: ", action)
 
                 # compute reward
                 action_str = self.action_list[action]
@@ -363,7 +364,9 @@ class ScheduleLinear(object):
         # ADD YOUR CODE SNIPPET BETWEEN EX 4.2
         # Return the annealed linear value
         
-        if t < self.schedule_timesteps:
-            return self.initial_p - (self.initial_p - self.final_p) * (t / self.schedule_timesteps)
-        return self.initial_p
+        # if t < self.schedule_timesteps:
+        #     return self.initial_p - (self.initial_p - self.final_p) * (t / self.schedule_timesteps)
+        # return self.initial_p
         # ADD YOUR CODE SNIPPET BETWEEN EX 4.2
+
+        return self.initial_p - (self.initial_p - self.final_p) * (t / self.schedule_timesteps)
